@@ -1,0 +1,75 @@
+version: '3.7'
+
+services:
+
+  mongodb_1:
+    image: mongo:6-jammy
+    hostname: mongodb_1
+    entrypoint: ["/usr/bin/mongod", "--config", "/etc/mongo/mongod.conf"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - 127.0.10.1:27017:27017
+    volumes:
+      - mongodb_data_1:/data/db
+      - ./mongo-replication.key:/etc/mongo-replication.key
+      - ./scripts:/scripts
+      - ./src/mongodb-server-1.conf:/etc/mongo/mongod.conf
+      - ./ssl:/etc/ssl
+    networks:
+        mariadb-net:
+            ipv4_address: 172.21.0.10
+
+  mongodb_2:
+    image: mongo:6-jammy
+    hostname: mongodb_2
+    entrypoint: ["/usr/bin/mongod", "--config", "/etc/mongo/mongod.conf"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - 127.0.10.2:27017:27017
+    volumes:
+      - mongodb_data_2:/data/db
+      - ./mongo-replication.key:/etc/mongo-replication.key
+      - ./scripts:/scripts
+      - ./src/mongodb-server-2.conf:/etc/mongo/mongod.conf
+      - ./ssl:/etc/ssl
+    depends_on:
+      - mongodb_1
+    networks:
+        mariadb-net:
+            ipv4_address: 172.21.0.20
+
+  mongodb_3:
+    image: mongo:6-jammy
+    hostname: mongodb_3
+    entrypoint: ["/usr/bin/mongod", "--config", "/etc/mongo/mongod.conf"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - 127.0.10.3:27017:27017
+    volumes:
+      - mongodb_data_3:/data/db
+      - ./mongo-replication.key:/etc/mongo-replication.key
+      - ./scripts:/scripts
+      - ./src/mongodb-server-3.conf:/etc/mongo/mongod.conf
+      - ./ssl:/etc/ssl
+    depends_on:
+      - mongodb_1
+    networks:
+        mariadb-net:
+            ipv4_address: 172.21.0.30
+
+volumes:
+  mongodb_data_1:
+  mongodb_data_2:
+  mongodb_data_3:
+
+networks:
+  mariadb-net:
+    ipam:
+      config:
+        - subnet: 172.21.0.0/24

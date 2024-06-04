@@ -1,0 +1,133 @@
+# Copyright (C) 2015 The Gravitee team (<http://gravitee.io>)
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#         <http://www.apache.org/licenses/LICENSE-2.0>
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+version: '3.5'
+networks:
+  storage:
+    name: storage
+
+volumes:
+  data-elasticsearch:
+  data-mongo:
+  mongodb_data_1:
+  mongodb_data_2:
+  mongodb_data_3:
+  mongodb_data_4:
+
+services:
+
+  python:
+    image: python:3.12
+    command: bash -c "while true; do echo hello; sleep 2; done"
+    networks:
+      - storage
+    depends_on:
+      - mongodb_1
+      - mongodb_2
+      - mongodb_3
+      - mongodb_4
+      - front-envoy
+
+  front-envoy:
+    build:
+      context: envoy
+    volumes:
+      - ./envoy/front-envoy.yaml:/etc/front-envoy.yaml
+    networks:
+      - storage
+    expose:
+      - "27000"
+      - "27001"
+      - "27002"
+      - "8201"
+    depends_on:
+      - mongodb_1
+      - mongodb_2
+      - mongodb_3
+      - mongodb_4
+    ports:
+      - "27000:27000"
+      - "27001:27001"
+      - "27002:27002"
+      - "8201:8001"
+
+  mongodb_1:
+    image: mongo:6
+    hostname: mongodb_1
+    entrypoint: ["/usr/bin/mongod", "--config", "/etc/mongo/mongod.conf", "--keyFile", "/etc/mongo-replication.key", "--replSet", "rs1"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - 127.0.10.1:27017:27017
+    volumes:
+      - mongodb_data_1:/data/db
+      - ./mongo-replication.key:/etc/mongo-replication.key
+      - ./scripts:/scripts
+      - ./src/mongodb-server-1.conf:/etc/mongo/mongod.conf
+    networks:
+      - storage
+
+  mongodb_2:
+    image: mongo:6
+    hostname: mongodb_2
+    entrypoint: ["/usr/bin/mongod", "--config", "/etc/mongo/mongod.conf", "--keyFile", "/etc/mongo-replication.key", "--replSet", "rs1"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - 127.0.10.2:27017:27017
+    volumes:
+      - mongodb_data_2:/data/db
+      - ./mongo-replication.key:/etc/mongo-replication.key
+      - ./scripts:/scripts
+      - ./src/mongodb-server-2.conf:/etc/mongo/mongod.conf
+    depends_on:
+      - mongodb_1
+    networks:
+      - storage
+
+  mongodb_3:
+    image: mongo:6
+    hostname: mongodb_3
+    entrypoint: ["/usr/bin/mongod", "--config", "/etc/mongo/mongod.conf", "--keyFile", "/etc/mongo-replication.key", "--replSet", "rs1"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - 127.0.10.3:27017:27017
+    volumes:
+      - mongodb_data_3:/data/db
+      - ./mongo-replication.key:/etc/mongo-replication.key
+      - ./scripts:/scripts
+      - ./src/mongodb-server-3.conf:/etc/mongo/mongod.conf
+    depends_on:
+      - mongodb_1
+    networks:
+      - storage
+
+  mongodb_4:
+    image: mongo:6
+    hostname: mongodb_4
+    entrypoint: ["/usr/bin/mongod", "--config", "/etc/mongo/mongod.conf", "--keyFile", "/etc/mongo-replication.key", "--replSet", "rs1"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: admin
+    ports:
+      - 127.0.10.4:27017:27017
+    volumes:
+      - mongodb_data_4:/data/db
+      - ./mongo-replication.key:/etc/mongo-replication.key
+      - ./scripts:/scripts
+      - ./src/mongodb-server-4.conf:/etc/mongo/mongod.conf
+    depends_on:
+      - mongodb_1
+    networks:
+      - storage
